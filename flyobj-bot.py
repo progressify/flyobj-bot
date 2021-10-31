@@ -27,8 +27,10 @@ def on_chat_message(msg):
             if not flight_dict:
                 bot.sendMessage(
                     user_dict['chat_id'],
-                    translate('Alcuni voli non hanno tutte le informazioni che vorrei mostrarti. Prova con un altro.',
-                              user_dict['language'])
+                    translate(
+                        'Alcuni voli non hanno tutte le informazioni che vorrei mostrarti. Prova con un altro.',
+                        user_dict['language']
+                    )
                 )
 
             flight_msg = flight_message(user_dict['language'])
@@ -39,13 +41,16 @@ def on_chat_message(msg):
             if flight_dict['from']:
                 msg_to_send += f" {flight_msg['da']} {flight_dict['from']} {flight_msg['per']} {flight_dict['to']}"
 
-            msg_to_send += f"{flight_msg['altezza']} {flight_dict['hight']} {flight_msg['velocita']} {flight_dict['speed']} {flight_msg['rotta']} {flight_dict['trak']}."
+            msg_to_send += f"{flight_msg['altezza']} {flight_dict['hight']} {flight_msg['velocita']} " \
+                           f"{flight_dict['speed']} {flight_msg['rotta']} {flight_dict['trak']}."
 
             bot.sendMessage(user_dict['chat_id'], msg_to_send)
 
             # Messaggio velocità
             if flight_dict['velocita_cambio'] > 1:
-                bot.sendMessage(user_dict['chat_id'], f"{flight_msg['velocita_cambio']} {flight_dict['velocita_cambio']} Kmh.")
+                bot.sendMessage(
+                    user_dict['chat_id'], f"{flight_msg['velocita_cambio']} {flight_dict['velocita_cambio']} Kmh."
+                )
 
             # elif flight_dict['velocita_cambio'] < 0:
             #     bot.sendMessage(
@@ -58,17 +63,24 @@ def on_chat_message(msg):
             bot.sendMessage(
                 user_dict['chat_id'],
                 'Ciao ' + user_dict['name'] +
-                translate(', if you give me your position I give you a list of flights in your area', user_dict['language']),
+                translate(
+                    ', if you give me your position I give you a list of flights in your area',
+                    user_dict['language']
+                ),
                 reply_markup=ReplyKeyboardMarkup(
                     keyboard=[
-                        [KeyboardButton(
-                            text=translate('Share your coordinates', user_dict['language']),
-                            request_location=True
-                        )],
-                        [KeyboardButton(
-                            text=translate('Share your address', user_dict['language']),
-                            request_location=False
-                        )]
+                        [
+                            KeyboardButton(
+                                text=translate('Share your coordinates', user_dict['language']),
+                                request_location=True
+                            )
+                        ],
+                        [
+                            KeyboardButton(
+                                text=translate('Share your address', user_dict['language']),
+                                request_location=False
+                            )
+                        ]
                     ]
                 )
             )
@@ -76,15 +88,20 @@ def on_chat_message(msg):
         elif txt == '/help':
             bot.sendMessage(
                 user_dict['chat_id'],
-                translate('Questo bot fornisce informazioni sugli aerei che sorvolano la tua zona in un raggio di '
-                          'circa 50 Km. Digita "/start" per attivare il bot', user_dict['language'])
+                translate(
+                    'Questo bot fornisce informazioni sugli aerei che sorvolano la tua zona in un raggio di '
+                    'circa 50 Km. Digita "/start" per attivare il bot',
+                    user_dict['language']
+                )
             )
 
         else:
             bot.sendMessage(
                 user_dict['chat_id'],
-                translate('Questo bot fornisce informazioni sugli aerei che sorvolano la tua zona in un raggio di '
-                          'circa 50 Km. Digita "/start" per attivare il bot', user_dict['language'])
+                translate(
+                    'Questo bot fornisce informazioni sugli aerei che sorvolano la tua zona in un raggio di '
+                    'circa 50 Km. Digita "/start" per attivare il bot', user_dict['language']
+                )
             )
 
     elif content_type == "location":
@@ -100,20 +117,26 @@ def on_chat_message(msg):
             longitudine = msg["location"]["longitude"]
         except KeyError as e:
             logging.info('I got a KeyError - reason "%s"' % str(e))
-            bot.sendMessage(user_dict['chat_id'], translate("C'è qualche problema con le tue coordinate", user_dict['language']))
+            bot.sendMessage(
+                user_dict['chat_id'],
+                translate("C'è qualche problema con le tue coordinate", user_dict['language'])
+            )
 
         logging.info(f"{latitudine}, {longitudine}")
-
         aerei = elenco_aerei(user_dict, latitudine, longitudine)
-
-        tastiera.extend(aerei['keyboard'])
-
-        bot.sendPhoto(user_dict['chat_id'], open(aerei['image'], "rb"))
-        bot.sendMessage(
-            user_dict['chat_id'],
-            translate('Clicca sul nome del volo per avere altre info', user_dict['language']),
-            reply_markup=ReplyKeyboardMarkup(keyboard=tastiera)
-        )
+        if aerei['success']:
+            tastiera.extend(aerei['keyboard'])
+            bot.sendPhoto(user_dict['chat_id'], open(aerei['image'], "rb"))
+            bot.sendMessage(
+                user_dict['chat_id'],
+                translate('Clicca sul nome del volo per avere altre info', user_dict['language']),
+                reply_markup=ReplyKeyboardMarkup(keyboard=tastiera)
+            )
+        else:
+            bot.sendMessage(
+                user_dict['chat_id'],
+                translate(aerei["message"], user_dict['language']),
+            )
 
     elif content_type == "sticker":
         bot.sendMessage(user_dict['chat_id'], translate('The answer is 42', user_dict['language']))
