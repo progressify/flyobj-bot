@@ -9,6 +9,7 @@ from telepot.namedtuple import KeyboardButton
 
 import pickle
 from config import BASE_URL_RADAR, BASE_URL_MAPS, MAPS_KEY
+from db_manager import DbManager
 
 
 def get_flight_info(user_dict: Dict, txt: str) -> Optional[Dict]:
@@ -28,23 +29,30 @@ def get_flight_info(user_dict: Dict, txt: str) -> Optional[Dict]:
 		}
 
 		return flight_dict
-
 	except KeyError as e:
 		logging.info('I got a KeyError - reason "%s"' % str(e))
 		return None
 
 
 def elenco_aerei(user_dict: Dict, latitudine, longitudine) -> Optional[Dict]:
-
 	dict_from_file = dict()
 	file_da_leggere = open(f"pickle/{user_dict['chat_id']}.pickle", "wb")
 
-	url = f"{BASE_URL_RADAR}?lat={latitudine}&lng={longitudine}&fDstL=0&fDstU=100"
-	with requests.get(url) as url:
-		data = json.loads(url.text)
+	db = DbManager()
+	if db.has_quota_reached():
+		return {
+			'success': False,
+			'message': "Limite chiamate mensile raggiunto.",
+			'keyboard': [],
+			'image': None,
+		}
+	else:
+		url = f"{BASE_URL_RADAR}?lat={latitudine}&lng={longitudine}&fDstL=0&fDstU=100"
+		with requests.get(url) as url:
+			data = json.loads(url.text)
+		db.increase_counter()
 
 	elenco_aerei = []
-
 	markers = ""
 	a = 0
 	for i in data[u'acList']:
@@ -64,7 +72,8 @@ def elenco_aerei(user_dict: Dict, latitudine, longitudine) -> Optional[Dict]:
 		b += 1
 		new_keyboard.append([KeyboardButton(text=str(b) + ' >' + aereo + '<')])
 
-	map_url = f"{BASE_URL_MAPS}?center={latitudine},{longitudine}&zoom=9&size=800x800&maptype=roadmap&{markers}&key={MAPS_KEY}"
+	map_url = f"{BASE_URL_MAPS}?center={latitudine},{longitudine}&zoom=9&size=800x800&maptype=roadmap&{markers}" \
+			  f"&key={MAPS_KEY}"
 	r = requests.get(map_url)
 	image_name = f"maps/{user_dict['chat_id']}.png"
 	mappa = Image.open(BytesIO(r.content))
@@ -72,6 +81,7 @@ def elenco_aerei(user_dict: Dict, latitudine, longitudine) -> Optional[Dict]:
 	pickle.dump(dict_from_file, file_da_leggere)
 
 	return {
+		'success': True,
 		'keyboard': new_keyboard,
 		'image': image_name,
 	}

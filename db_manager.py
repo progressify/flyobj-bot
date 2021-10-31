@@ -22,7 +22,7 @@ class DbManager:
         month = f"{now.month}-{now.year}"
         try:
             row = await ApiCounter.get(month=month)
-            return row.count < (row.limit - 1)
+            return not row.count < (row.limit - 1)
         except DoesNotExist:
             await ApiCounter.create(month=month)
             return False
